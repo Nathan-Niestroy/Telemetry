@@ -353,6 +353,14 @@ the packaged executable on every push and pull request.
 
 Telemetry is available under the MIT License. See [LICENSE](LICENSE).
 
+## Acknowledgments
+
+Telemetry was made possible by open-source maintainers, data providers, platform
+teams, testers, and development tools. Please see [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md)
+for the full thank-you list, including the `srichs/tsp-analytics` contributors,
+Python, SQLite, Qt for Python, yfinance, keyring, cryptography, PyInstaller,
+Pillow, Inno Setup, Microsoft, Google, GitHub, and OpenAI Codex.
+
 ## Troubleshooting
 
 - **Incorrect email address or password:** Use the user's family login email and
