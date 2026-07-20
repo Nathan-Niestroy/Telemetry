@@ -180,7 +180,52 @@ Dialog {
             wrapMode: Text.WordWrap
             text: "This replaces all current Telemetry data after validating the encrypted backup. Telemetry will close after restore."
         }
-        onAccepted: backupController.restoreBackup(backupPassword.text)
+        onAccepted: {
+            restorePassword.clear()
+            restorePasswordDialog.open()
+            restorePassword.forceActiveFocus()
+        }
+    }
+
+    Dialog {
+        id: restorePasswordDialog
+        anchors.centerIn: parent
+        modal: true
+        title: "Enter backup password"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        Column {
+            width: 380
+            spacing: 10
+
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Enter the password used when this encrypted backup was created."
+            }
+
+            TextField {
+                id: restorePassword
+                width: parent.width
+                placeholderText: "Backup password"
+                echoMode: TextInput.Password
+                onAccepted: {
+                    if (text.length > 0)
+                        restorePasswordDialog.accept()
+                }
+            }
+        }
+
+        onAccepted: {
+            if (restorePassword.text.length === 0) {
+                open()
+                restorePassword.forceActiveFocus()
+                return
+            }
+            backupController.restoreBackup(restorePassword.text)
+            restorePassword.clear()
+        }
+        onRejected: restorePassword.clear()
     }
 
     Dialog {
