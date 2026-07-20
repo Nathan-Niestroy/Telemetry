@@ -4,12 +4,13 @@ import hashlib
 import hmac
 import secrets
 import sqlite3
+import re
 from contextlib import closing
 from pathlib import Path
 
 
-# Repeating the hash makes password guessing intentionally expensive.
 PBKDF2_ITERATIONS = 600_000
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class UserStore:
@@ -17,7 +18,6 @@ class UserStore:
 
     def __init__(self, database_path: Path) -> None:
         """Prepare the database directory and users table."""
-        # SQLite cannot create missing parent folders itself.
         database_path.parent.mkdir(parents=True, exist_ok=True)
         self.database_path = database_path
         self._create_tables()
@@ -31,7 +31,6 @@ class UserStore:
 
     def _create_tables(self) -> None:
         """Create the users table the first time Telemetry is launched."""
-        # `closing` releases the file handle; `connection` commits the transaction.
         with closing(self._connect()) as connection, connection:
             connection.execute(
                 """
@@ -41,6 +40,8 @@ class UserStore:
                     password_hash TEXT NOT NULL,
                     salt TEXT NOT NULL,
                     is_admin INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)),
+                    must_change_password INTEGER NOT NULL DEFAULT 0
+                        CHECK (must_change_password IN (0, 1)),
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -52,6 +53,11 @@ class UserStore:
             if "is_admin" not in columns:
                 connection.execute(
                     "ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0"
+                )
+            if "must_change_password" not in columns:
+                connection.execute(
+                    "ALTER TABLE users ADD COLUMN must_change_password "
+                    "INTEGER NOT NULL DEFAULT 0"
                 )
             # Existing installations need one administrator after the migration.
             connection.execute(
@@ -68,16 +74,16 @@ class UserStore:
             row = connection.execute("SELECT EXISTS(SELECT 1 FROM users)").fetchone()
         return bool(row[0])
 
-    def create_user(self, username: str, password: str) -> int:
+    def create_user(
+        self, username: str, password: str, *, must_change_password: bool = False
+    ) -> int:
         """Validate a new user, store a salted password hash, and return its ID."""
-        # Whitespace around a username should not create a different account.
         username = username.strip()
-        if len(username) < 3:
-            raise ValueError("Username must be at least 3 characters.")
+        if not EMAIL_PATTERN.fullmatch(username):
+            raise ValueError("Enter a valid email address.")
         if len(password) < 10:
             raise ValueError("Password must be at least 10 characters.")
 
-        # Each password gets a random salt so equal passwords have different hashes.
         salt = secrets.token_bytes(16)
         password_hash = self._hash_password(password, salt)
 
@@ -88,35 +94,86 @@ class UserStore:
                 )
                 cursor = connection.execute(
                     """
-                    INSERT INTO users (username, password_hash, salt, is_admin)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO users (
+                        username, password_hash, salt, is_admin, must_change_password
+                    ) VALUES (?, ?, ?, ?, ?)
                     """,
-                    # Hex strings are easy to store safely in SQLite TEXT columns.
-                    (username, password_hash.hex(), salt.hex(), int(is_first_user)),
+                    (
+                        username,
+                        password_hash.hex(),
+                        salt.hex(),
+                        int(is_first_user),
+                        int(must_change_password and not is_first_user),
+                    ),
                 )
         except sqlite3.IntegrityError as error:
-            raise ValueError("That username already exists.") from error
+            raise ValueError("That email address is already in use.") from error
         return cursor.lastrowid
 
-    def authenticate(self, username: str, password: str) -> tuple[int, bool] | None:
-        """Return the user's ID and admin status when credentials match."""
+    def update_user_email(self, user_id: int, email: str) -> None:
+        """Replace a user's login email while preserving their account and password."""
+        email = email.strip()
+        if not EMAIL_PATTERN.fullmatch(email):
+            raise ValueError("Enter a valid email address.")
+        try:
+            with closing(self._connect()) as connection, connection:
+                cursor = connection.execute(
+                    "UPDATE users SET username = ? WHERE id = ?", (email, user_id)
+                )
+                if cursor.rowcount == 0:
+                    raise ValueError("User account no longer exists.")
+        except sqlite3.IntegrityError as error:
+            raise ValueError("That email address is already in use.") from error
+
+    def authenticate(
+        self, username: str, password: str
+    ) -> tuple[int, bool, bool] | None:
+        """Return the user's ID, role, and password-change state on a match."""
         with closing(self._connect()) as connection:
             user = connection.execute(
-                "SELECT id, password_hash, salt, is_admin FROM users WHERE username = ?",
+                """SELECT id, password_hash, salt, is_admin, must_change_password
+                   FROM users WHERE username = ?""",
                 (username.strip(),),
             ).fetchone()
 
         if user is None:
             return None
 
-        # Recreate the hash using the stored salt instead of decrypting a password.
         expected_hash = bytes.fromhex(user["password_hash"])
         salt = bytes.fromhex(user["salt"])
         supplied_hash = self._hash_password(password, salt)
-        # Constant-time comparison avoids leaking information through timing differences.
         if hmac.compare_digest(supplied_hash, expected_hash):
-            return user["id"], bool(user["is_admin"])
+            return (
+                user["id"],
+                bool(user["is_admin"]),
+                bool(user["must_change_password"]),
+            )
         return None
+
+    def change_required_password(self, user_id: int, password: str) -> None:
+        """Replace a temporary password and clear its first-login requirement."""
+        if len(password) < 10:
+            raise ValueError("Password must be at least 10 characters.")
+
+        with closing(self._connect()) as connection, connection:
+            user = connection.execute(
+                "SELECT password_hash, salt FROM users WHERE id = ?", (user_id,)
+            ).fetchone()
+            if user is None:
+                raise ValueError("User account no longer exists.")
+            old_hash = bytes.fromhex(user["password_hash"])
+            old_salt = bytes.fromhex(user["salt"])
+            if hmac.compare_digest(self._hash_password(password, old_salt), old_hash):
+                raise ValueError("Choose a password different from the temporary password.")
+
+            salt = secrets.token_bytes(16)
+            password_hash = self._hash_password(password, salt)
+            connection.execute(
+                """UPDATE users
+                   SET password_hash = ?, salt = ?, must_change_password = 0
+                   WHERE id = ?""",
+                (password_hash.hex(), salt.hex(), user_id),
+            )
 
     def verify_user(self, username: str, password: str) -> bool:
         """Return True only when the supplied credentials are valid."""
@@ -126,12 +183,13 @@ class UserStore:
         """Return non-sensitive user details for the management screen."""
         with closing(self._connect()) as connection:
             rows = connection.execute(
-                "SELECT id, username, is_admin, created_at FROM users ORDER BY username"
+                """SELECT id, username, is_admin, must_change_password, created_at
+                   FROM users ORDER BY username"""
             ).fetchall()
         return [dict(row) for row in rows]
 
     def delete_user(self, user_id: int) -> None:
-        """Delete a user; their accounts are removed by the foreign key cascade."""
+        """Delete a login without removing shared family financial data."""
         with closing(self._connect()) as connection, connection:
             connection.execute("DELETE FROM users WHERE id = ?", (user_id,))
 

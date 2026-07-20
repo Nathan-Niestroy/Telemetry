@@ -4,16 +4,17 @@ import QtQuick.Controls.Universal
 
 Dialog {
     id: dialog
-    title: "Manage users"
+    signal emailSettingsRequested()
+    title: "Manage family"
     modal: true
     anchors.centerIn: parent
-    width: 500
-    height: 560
+    width: 700
+    height: 760
     standardButtons: Dialog.Close
 
-    // Remember the selected user while the confirmation dialog is open.
     property int pendingDeleteUserId: -1
     property string pendingDeleteUsername: ""
+    property int pendingEditUserId: -1
 
     Column {
         width: parent.width
@@ -28,7 +29,8 @@ Dialog {
         TextField {
             id: newUsername
             width: parent.width
-            placeholderText: "Username"
+            placeholderText: "Email address"
+            inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase
         }
 
         TextField {
@@ -64,7 +66,6 @@ Dialog {
             font.pixelSize: 18
         }
 
-        // Only non-sensitive user metadata is provided by UserController.
         ListView {
             width: parent.width
             height: 175
@@ -85,11 +86,24 @@ Dialog {
                     spacing: 8
 
                     Label {
-                        width: parent.width - deleteButton.width - parent.spacing
+                        width: parent.width - editButton.width - deleteButton.width
+                               - (parent.spacing * 2)
                         anchors.verticalCenter: parent.verticalCenter
+                        elide: Text.ElideRight
                         text: modelData.username
                               + (modelData.is_admin ? " - Administrator" : "")
+                              + (modelData.must_change_password ? " - Password change pending" : "")
                               + (modelData.is_current ? " - Signed in" : "")
+                    }
+
+                    Button {
+                        id: editButton
+                        text: "Edit"
+                        onClicked: {
+                            dialog.pendingEditUserId = modelData.id
+                            editEmailField.text = modelData.username
+                            editEmailDialog.open()
+                        }
                     }
 
                     Button {
@@ -108,12 +122,88 @@ Dialog {
 
         Button {
             width: parent.width
+            text: "Email report settings"
+            onClicked: dialog.emailSettingsRequested()
+        }
+
+        Label {
+            text: "Backup and recovery"
+            font.bold: true
+            font.pixelSize: 18
+        }
+
+        TextField {
+            id: backupPassword
+            width: parent.width
+            placeholderText: "Backup password (12+ characters)"
+            echoMode: TextInput.Password
+        }
+
+        Row {
+            width: parent.width
+            spacing: 8
+            Button {
+                width: (parent.width - parent.spacing) / 2
+                text: "Create encrypted backup"
+                onClicked: backupController.createBackup(backupPassword.text)
+            }
+            Button {
+                width: (parent.width - parent.spacing) / 2
+                text: "Restore backup"
+                onClicked: restoreConfirmation.open()
+            }
+        }
+
+        Label {
+            width: parent.width
+            text: backupController.message
+            color: text.indexOf("success") >= 0 ? "#55e879" : "#ffcc66"
+            wrapMode: Text.WordWrap
+            visible: text.length > 0
+        }
+
+        Button {
+            width: parent.width
             text: "Factory reset Telemetry"
             onClicked: resetConfirmation.open()
         }
     }
 
-    // Destructive actions always require a separate confirmation.
+    Dialog {
+        id: restoreConfirmation
+        anchors.centerIn: parent
+        modal: true
+        title: "Restore backup?"
+        standardButtons: Dialog.Yes | Dialog.No
+        Label {
+            width: 380
+            wrapMode: Text.WordWrap
+            text: "This replaces all current Telemetry data after validating the encrypted backup. Telemetry will close after restore."
+        }
+        onAccepted: backupController.restoreBackup(backupPassword.text)
+    }
+
+    Dialog {
+        id: editEmailDialog
+        anchors.centerIn: parent
+        modal: true
+        title: "Update login email"
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        TextField {
+            id: editEmailField
+            width: 360
+            placeholderText: "Email address"
+            inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase
+        }
+
+        onAccepted: {
+            if (!userController.updateUserEmail(dialog.pendingEditUserId,
+                                                editEmailField.text))
+                open()
+        }
+    }
+
     Dialog {
         id: deleteConfirmation
         anchors.centerIn: parent
@@ -122,8 +212,10 @@ Dialog {
         standardButtons: Dialog.Yes | Dialog.No
 
         Label {
-            text: "Delete " + dialog.pendingDeleteUsername
-                  + " and all of their financial accounts?"
+            width: 380
+            wrapMode: Text.WordWrap
+            text: "Delete the login for " + dialog.pendingDeleteUsername
+                  + "? Shared family financial data will be kept."
         }
 
         onAccepted: userController.deleteUser(dialog.pendingDeleteUserId)

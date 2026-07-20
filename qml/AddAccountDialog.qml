@@ -10,7 +10,6 @@ Dialog {
     width: 380
     standardButtons: Dialog.Save | Dialog.Cancel
 
-    // Expose field values to Main.qml without exposing the controls themselves.
     property alias accountName: nameField.text
     property alias owner: ownerField.text
     property string accountType: typeField.currentText
@@ -21,7 +20,6 @@ Dialog {
     onAccepted: saveRequested()
     onOpened: nameField.forceActiveFocus()
 
-    // A successful submission leaves a clean form for the next account.
     function clearFields() {
         nameField.clear()
         ownerField.clear()
@@ -48,13 +46,13 @@ Dialog {
         ComboBox {
             id: typeField
             width: parent.width
-            model: ["Bank", "Retirement", "Investment", "Other"]
+            model: ["Bank", "Investment", "Retirement", "Real Estate", "Other Asset", "Debt"]
         }
 
         TextField {
             id: balanceField
             width: parent.width
-            placeholderText: "Current balance"
+            placeholderText: typeField.currentText === "Debt" ? "Current amount owed" : "Current balance"
             inputMethodHints: Qt.ImhFormattedNumbersOnly
         }
     }

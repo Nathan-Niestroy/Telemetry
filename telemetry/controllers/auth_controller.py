@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from auth import UserStore
+from telemetry.data.auth import UserStore
 
 
 class AuthController(QObject):
@@ -20,6 +20,8 @@ class AuthController(QObject):
         self._logged_in = False
         self._username = ""
         self._is_admin = False
+        self._user_id: int | None = None
+        self._must_change_password = False
         self._message = ""
 
     @Property(bool, notify=state_changed)
@@ -34,13 +36,18 @@ class AuthController(QObject):
 
     @Property(str, notify=state_changed)
     def username(self) -> str:
-        """Expose the signed-in username for the welcome message."""
+        """Expose the signed-in email for the dashboard header."""
         return self._username
 
     @Property(bool, notify=state_changed)
     def isAdmin(self) -> bool:
         """Tell QML whether the current user may manage local users."""
         return self._is_admin
+
+    @Property(bool, notify=state_changed)
+    def mustChangePassword(self) -> bool:
+        """Prevent temporary-password sessions from opening the dashboard."""
+        return self._must_change_password
 
     @Property(str, notify=state_changed)
     def message(self) -> str:
@@ -59,6 +66,8 @@ class AuthController(QObject):
             self._logged_in = True
             self._username = username.strip()
             self._is_admin = True
+            self._user_id = user_id
+            self._must_change_password = False
             self._message = ""
             self.user_authenticated.emit(user_id, True)
         self.state_changed.emit()
@@ -68,15 +77,42 @@ class AuthController(QObject):
         """Sign in when the supplied credentials match the database."""
         authentication = self._user_store.authenticate(username, password)
         if authentication is not None:
-            user_id, is_admin = authentication
+            user_id, is_admin, must_change_password = authentication
             self._logged_in = True
             self._username = username.strip()
             self._is_admin = is_admin
+            self._user_id = user_id
+            self._must_change_password = must_change_password
             self._message = ""
-            self.user_authenticated.emit(user_id, is_admin)
+            if not must_change_password:
+                self.user_authenticated.emit(user_id, is_admin)
         else:
-            self._message = "Incorrect username or password."
+            self._message = "Incorrect email address or password."
         self.state_changed.emit()
+
+    @Slot(str, str, result=bool)
+    def changeRequiredPassword(self, password: str, confirmation: str) -> bool:
+        """Complete first login by replacing an administrator-set password."""
+        if not self._logged_in or not self._must_change_password or self._user_id is None:
+            self._message = "No password change is currently required."
+            self.state_changed.emit()
+            return False
+        if password != confirmation:
+            self._message = "New passwords do not match."
+            self.state_changed.emit()
+            return False
+        try:
+            self._user_store.change_required_password(self._user_id, password)
+        except ValueError as error:
+            self._message = str(error)
+            self.state_changed.emit()
+            return False
+
+        self._must_change_password = False
+        self._message = ""
+        self.user_authenticated.emit(self._user_id, self._is_admin)
+        self.state_changed.emit()
+        return True
 
     @Slot()
     def logout(self) -> None:
@@ -84,9 +120,18 @@ class AuthController(QObject):
         self._logged_in = False
         self._username = ""
         self._is_admin = False
+        self._user_id = None
+        self._must_change_password = False
         self._message = ""
         self.state_changed.emit()
         self.user_logged_out.emit()
+
+    @Slot(str)
+    def update_current_email(self, email: str) -> None:
+        """Keep the signed-in label current after an administrator edits it."""
+        if self._logged_in:
+            self._username = email
+            self.state_changed.emit()
 
     @Slot()
     def reset_after_factory_reset(self) -> None:

@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from auth import UserStore
+from telemetry.data.auth import UserStore
 
 
 class UserController(QObject):
@@ -11,6 +11,7 @@ class UserController(QObject):
     users_changed = Signal()
     message_changed = Signal()
     factory_reset_completed = Signal()
+    current_user_email_changed = Signal(str)
 
     def __init__(self, user_store: UserStore) -> None:
         """Start without an authenticated user or management permissions."""
@@ -54,7 +55,9 @@ class UserController(QObject):
             self._set_message("Administrator access is required.")
             return False
         try:
-            self._user_store.create_user(username, password)
+            self._user_store.create_user(
+                username, password, must_change_password=True
+            )
         except ValueError as error:
             self._set_message(str(error))
             return False
@@ -76,6 +79,24 @@ class UserController(QObject):
         self._reload()
         return True
 
+    @Slot(int, str, result=bool)
+    def updateUserEmail(self, user_id: int, email: str) -> bool:
+        """Allow an administrator to update any local user's login email."""
+        if not self._is_admin:
+            self._set_message("Administrator access is required.")
+            return False
+        try:
+            self._user_store.update_user_email(user_id, email)
+        except ValueError as error:
+            self._set_message(str(error))
+            return False
+        normalized_email = email.strip()
+        self._set_message("")
+        self._reload()
+        if user_id == self._current_user_id:
+            self.current_user_email_changed.emit(normalized_email)
+        return True
+
     @Slot(result=bool)
     def factoryReset(self) -> bool:
         """Allow an administrator to erase every local user and account."""
@@ -93,6 +114,7 @@ class UserController(QObject):
             {
                 **user,
                 "is_admin": bool(user["is_admin"]),
+                "must_change_password": bool(user["must_change_password"]),
                 "is_current": user["id"] == self._current_user_id,
             }
             for user in self._user_store.list_users()

@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python -m unittest discover -v
+      - name: Load the real QML application offscreen
+        shell: pwsh
+        run: |
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $env:TELEMETRY_SMOKE_TEST = "1"
+          $env:TELEMETRY_DATA_DIR = "$env:RUNNER_TEMP\telemetry-smoke"
+          python app.py
+
+  package:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: pyinstaller --clean --noconfirm Telemetry.spec
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer\Telemetry.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Telemetry-Windows
+          path: |
+            dist/Telemetry.exe
+            dist/installer/Telemetry-Setup-*.exe
