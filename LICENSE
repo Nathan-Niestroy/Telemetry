@@ -1,16 +1,35 @@
-MIT License
+Telemetry - Proprietary Rights Notice
 
-Copyright (c) 2026 Telemetry contributors
+Copyright (c) 2026 Nathan Niestroy. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This notice applies to the original Telemetry source code and documentation
+owned by Nathan Niestroy (the "Software") in versions distributed with this
+notice. Ownership is retained by the copyright holder; access to the source
+code does not transfer ownership or grant a general license to use it.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Except as permitted by applicable law, applicable hosting-platform terms,
+third-party licenses, or a separate written agreement with Nathan Niestroy,
+no permission is granted to use, copy, modify, create derivative works from,
+distribute, sublicense, sell, or otherwise commercially exploit the Software.
+Public availability of this repository does not grant those permissions.
+
+Commercial licenses and other permissions may be negotiated directly with
+Nathan Niestroy through the GitHub profile:
+https://github.com/Nathan-Niestroy
+Any license fees, permitted uses, support commitments, and other conditions
+must be set out in a separate written agreement. This notice does not grant
+a paid license or impose an automatic payment obligation.
+
+Third-party libraries, components, and other material remain the property of
+their respective owners and are governed by their own licenses. This notice
+does not replace those licenses or restrict rights they grant, including any
+applicable LGPL rights to modify or replace libraries and reverse engineer
+for debugging those modifications. Required third-party notices and license
+terms must be preserved when distributing those components.
+
+Earlier versions distributed under the MIT License remain subject to the
+permissions already granted under that license. This notice does not revoke
+those permissions or claim ownership of third-party contributions.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

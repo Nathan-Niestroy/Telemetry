@@ -4,7 +4,7 @@ a = Analysis(
     ["app.py"],
     pathex=[],
     binaries=[],
-    datas=[("qml", "qml"), ("assets", "assets")],
+    datas=[("qml", "qml"), ("assets", "assets"), ("LICENSE", ".")],
     hiddenimports=["keyring.backends.Windows"],
     hookspath=[],
     runtime_hooks=[],

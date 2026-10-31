@@ -8,6 +8,7 @@ AppId={{2BA28D5B-417D-42D8-84B0-BAB1CB36E06E}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+LicenseFile=..\LICENSE
 DefaultDirName={autopf}\Telemetry
 DefaultGroupName=Telemetry
 OutputDir=..\dist\installer
@@ -20,6 +21,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 
 [Files]
 Source: "..\dist\Telemetry.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\Telemetry"; Filename: "{app}\{#MyAppExeName}"

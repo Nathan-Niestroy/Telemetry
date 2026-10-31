@@ -363,7 +363,22 @@ the packaged executable on every push and pull request.
 
 ## License
 
-Telemetry is available under the MIT License. See [LICENSE](LICENSE).
+Copyright (c) 2026 Nathan Niestroy. All rights reserved for the original
+Telemetry code and documentation owned by Nathan Niestroy. This version is
+proprietary; public source access does not grant a general right to use,
+modify, redistribute, or sell it. See [LICENSE](LICENSE) for the full notice
+and its exceptions.
+
+For commercial licensing or other permissions, contact
+[Nathan Niestroy](https://github.com/Nathan-Niestroy) to arrange a separate
+written agreement. No payment system or paid support is included, and the
+project remains deprecated.
+
+Third-party components retain their own licenses. Earlier MIT-licensed
+versions retain the permissions already granted under MIT. Changing this
+notice does not revoke those rights. Distribution of packaged builds also
+requires compliance with the licenses of bundled dependencies, including Qt
+and PySide6; this notice is not a dependency-license compliance audit.
 
 ## Acknowledgments
 
