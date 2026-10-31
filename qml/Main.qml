@@ -11,13 +11,23 @@ ApplicationWindow {
     height: 760
     minimumWidth: 760
     minimumHeight: 620
-    title: "Telemetry"
+    title: "Telemetry (deprecated)"
     color: "#061326"
 
     Universal.theme: Universal.Dark
     Universal.accent: "#147a96"
     Universal.foreground: "#e8f7ff"
     Universal.background: "#061326"
+
+    header: Label {
+        width: window.width
+        padding: 10
+        text: "Telemetry is deprecated and no longer maintained. Back up your data before retiring this app."
+        wrapMode: Text.WordWrap
+        horizontalAlignment: Text.AlignHCenter
+        color: "#ffe0a3"
+        background: Rectangle { color: "#3a2c16" }
+    }
 
     property color panelColor: "#0a1d33"
     property color panelBorder: "#17466a"

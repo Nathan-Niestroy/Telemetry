@@ -1,4 +1,16 @@
-# Telemetry
+# Telemetry (deprecated)
+
+> **Deprecated as of October 31, 2026.** Active development has ended. The
+> maintainer is moving their finance workflow to ChatGPT with a finance plugin.
+> No further features, bug fixes, or security updates are planned.
+
+The source and instructions below are retained for existing users and reference.
+Existing installations can still open local data and create encrypted backups.
+Before retiring your installation, use **Manage family > Create encrypted backup**
+and keep the backup password separately. Telemetry backups are for restoring in
+Telemetry; this project does not provide an automatic migration to ChatGPT.
+If you used Gmail reports, revoke the dedicated Gmail App Password when you
+stop using Telemetry.
 
 ![Telemetry application icon](assets/Telemetry_Icon.png)
 
@@ -9,12 +21,12 @@ vehicles, and other manually entered assets or liabilities. It also provides
 shared income, allocation, monthly spending, and saving plans. Telemetry does
 not import bank transactions.
 
-This repository contains an early development version. Telemetry does not use
+This repository contains the final, unmaintained development version. Telemetry does not use
 Plaid or connect to financial institutions. Bank balances and debts are entered
 manually; supported investment and TSP positions can be recalculated from their
 latest available closing prices.
 
-## Current features
+## Existing features
 
 - First-launch administrator registration using an email address
 - Local sign-in with salted PBKDF2-SHA256 password hashes
@@ -268,8 +280,8 @@ Source runs store application data in `instance/telemetry.db`. Packaged builds
 store it under `%LOCALAPPDATA%\Telemetry`. The official TSP cache is stored next
 to the database. These paths are excluded from Git.
 
-Administrators can open **Manage family**, enter a backup password containing at
-least 12 characters, and choose **Create encrypted backup**. The resulting
+Administrators can open **Manage family**, choose **Create encrypted backup**,
+and enter a backup password containing at least 12 characters when prompted. The resulting
 `.telemetry` file uses scrypt key derivation and authenticated AES-256-GCM
 encryption. Restore authenticates the file, runs SQLite integrity and schema
 checks, and only then replaces the live database. Reopen Telemetry after restore.

@@ -1,5 +1,10 @@
 # Telemetry security notes
 
+Telemetry is deprecated as of October 31, 2026 and is no longer maintained.
+No security updates are planned. The notes below describe the existing design,
+not an ongoing support commitment. See [README.md](README.md) for retirement
+and backup guidance.
+
 Telemetry is a local family net-worth application intended for a trusted Windows
 computer. It has not been designed as an internet-facing service.
 

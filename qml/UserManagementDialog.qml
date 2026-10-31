@@ -132,20 +132,17 @@ Dialog {
             font.pixelSize: 18
         }
 
-        TextField {
-            id: backupPassword
-            width: parent.width
-            placeholderText: "Backup password (12+ characters)"
-            echoMode: TextInput.Password
-        }
-
         Row {
             width: parent.width
             spacing: 8
             Button {
                 width: (parent.width - parent.spacing) / 2
                 text: "Create encrypted backup"
-                onClicked: backupController.createBackup(backupPassword.text)
+                onClicked: {
+                    createBackupPassword.clear()
+                    createBackupPasswordDialog.open()
+                    createBackupPassword.forceActiveFocus()
+                }
             }
             Button {
                 width: (parent.width - parent.spacing) / 2
@@ -167,6 +164,47 @@ Dialog {
             text: "Factory reset Telemetry"
             onClicked: resetConfirmation.open()
         }
+    }
+
+    Dialog {
+        id: createBackupPasswordDialog
+        anchors.centerIn: parent
+        modal: true
+        title: "Create backup password"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+
+        Column {
+            width: 380
+            spacing: 10
+
+            Label {
+                width: parent.width
+                wrapMode: Text.WordWrap
+                text: "Enter a password of at least 12 characters to encrypt this backup."
+            }
+
+            TextField {
+                id: createBackupPassword
+                width: parent.width
+                placeholderText: "Backup password (12+ characters)"
+                echoMode: TextInput.Password
+                onAccepted: {
+                    if (text.length >= 12)
+                        createBackupPasswordDialog.accept()
+                }
+            }
+        }
+
+        onAccepted: {
+            if (createBackupPassword.text.length < 12) {
+                open()
+                createBackupPassword.forceActiveFocus()
+                return
+            }
+            backupController.createBackup(createBackupPassword.text)
+            createBackupPassword.clear()
+        }
+        onRejected: createBackupPassword.clear()
     }
 
     Dialog {
