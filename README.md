@@ -21,10 +21,10 @@ vehicles, and other manually entered assets or liabilities. It also provides
 shared income, allocation, monthly spending, and saving plans. Telemetry does
 not import bank transactions.
 
-This repository contains the final, unmaintained development version. Telemetry does not use
-Plaid or connect to financial institutions. Bank balances and debts are entered
-manually; supported investment and TSP positions can be recalculated from their
-latest available closing prices.
+This repository contains the final, unmaintained development version. Telemetry
+does not use Plaid or connect to financial institutions. Bank balances and debts
+are entered manually; supported investment and TSP positions can be recalculated
+from their latest available closing prices.
 
 ## Existing features
 
@@ -62,7 +62,7 @@ latest available closing prices.
 - Windows 11 is the primary development platform
 - Python 3.14 is recommended
 - Internet access for market refreshes and Gmail reports
-- A Gmail account with 2-Step Verification for automatic family reports
+- A Gmail account with 2-Step Verification for manually sent family reports
 
 Python dependencies are pinned or bounded in `requirements.txt`:
 
@@ -281,8 +281,8 @@ store it under `%LOCALAPPDATA%\Telemetry`. The official TSP cache is stored next
 to the database. These paths are excluded from Git.
 
 Administrators can open **Manage family**, choose **Create encrypted backup**,
-and enter a backup password containing at least 12 characters when prompted. The resulting
-`.telemetry` file uses scrypt key derivation and authenticated AES-256-GCM
+and enter a backup password containing at least 12 characters when prompted.
+The resulting `.telemetry` file uses scrypt key derivation and authenticated AES-256-GCM
 encryption. Restore authenticates the file, runs SQLite integrity and schema
 checks, and only then replaces the live database. Reopen Telemetry after restore.
 
@@ -290,8 +290,8 @@ To make an additional manual backup:
 
 1. Close Telemetry so SQLite has no active writes.
 2. Copy `instance/telemetry.db` to an encrypted or otherwise trusted location.
-3. Protect the backup as carefully as the computer because the database is not
-   encrypted.
+3. Treat the copied database as unencrypted unless you have verified protection
+   at the destination. Windows EFS protection may not survive copying.
 
 Restoring a backup replaces the current database. Keep a separate copy of the
 current database before restoring an older one. Gmail credentials are managed
@@ -300,11 +300,11 @@ separately by Windows Credential Manager and are not included in database copies
 ## Factory reset
 
 An administrator can choose **Manage family > Factory reset Telemetry**. After
-confirmation, this permanently deletes all local users and financial accounts
-and returns Telemetry to first-launch registration. Holdings are removed through
-their account relationships. This action cannot be undone unless the database
-was backed up separately. The Gmail credential remains in Windows Credential
-Manager and can be replaced from Email report settings after registering again.
+confirmation, this permanently deletes local users, financial accounts,
+holdings, and budgets, and returns Telemetry to first-launch registration.
+It also removes the saved Gmail credential and sender setting. This action
+cannot be undone unless the database was backed up separately. Revoke the
+dedicated App Password in your Google Account when retiring Telemetry.
 
 ## Tests
 
