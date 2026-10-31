@@ -99,11 +99,11 @@ class ReleaseHardeningTests(unittest.TestCase):
         self, delete_password, settings_class
     ) -> None:
         settings = settings_class.return_value
-        settings.value.return_value = "sender@gmail.com"
+        settings.value.return_value = "sender@example.com"
         controller = ReportController(self.users, self.accounts)
         controller.clearCredentials()
         delete_password.assert_called_once_with(
-            "Telemetry.FamilyFinance.Gmail", "sender@gmail.com"
+            "Telemetry.FamilyFinance.Gmail", "sender@example.com"
         )
         settings.remove.assert_called_once_with("report/sender_email")
 

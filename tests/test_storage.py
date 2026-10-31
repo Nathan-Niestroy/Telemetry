@@ -85,7 +85,7 @@ class StorageTests(unittest.TestCase):
         ]
 
         message = ReportController._build_message(
-            "sender@gmail.com", ["family@example.com"], accounts
+            "sender@example.com", ["family@example.com"], accounts
         )
         plain = message.get_body(preferencelist=("plain",)).get_content()
 
@@ -109,7 +109,7 @@ class StorageTests(unittest.TestCase):
         )
 
         message = ReportController._build_message(
-            "sender@gmail.com", [], [], budget.report_snapshot()
+            "sender@example.com", [], [], budget.report_snapshot()
         )
         plain = message.get_body(preferencelist=("plain",)).get_content()
         html_body = message.get_body(preferencelist=("html",)).get_content()
